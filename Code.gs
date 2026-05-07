@@ -79,7 +79,7 @@ function onFormSubmit(e) {
   fillFormResponseMeta_(ss, meta, formAppendedRow);
 
   const result = buildSettlementResult_(ss, row);
-  appendSettlementResult_(ss, result);
+  appendSettlementResult_(ss, result, meta.applicationId);
 }
 
 /**
@@ -116,7 +116,7 @@ function submitWebApplication(data) {
   const result = buildSettlementResult_(ss, row);
 
   appendWebApplicationToResponseSheet_(ss, row, meta);
-  appendSettlementResult_(ss, result);
+  appendSettlementResult_(ss, result, meta.applicationId);
 
   return {
     applicationId: meta.applicationId,
@@ -209,7 +209,7 @@ function buildSettlementResult_(ss, row) {
 /**
  * 精算結果シートに追加
  */
-function appendSettlementResult_(ss, result) {
+function appendSettlementResult_(ss, result, applicationId) {
   const sheet = ss.getSheetByName(SHEET_NAMES.results);
   if (!sheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
 
@@ -229,6 +229,7 @@ function appendSettlementResult_(ss, result) {
     result.payment,
     result.status,
     result.errorMessage,
+    applicationId || '',
   ]);
 
   if (result.status !== 'OK') {
@@ -413,6 +414,7 @@ function rebuildAllResults() {
     '支給額',
     'ステータス',
     'エラー内容',
+    '申請ID',
   ]);
 
   if (errorSheet) {
@@ -430,7 +432,7 @@ function rebuildAllResults() {
   const values = responseSheet.getDataRange().getValues();
   const rows = values.slice(1);
 
-  rows.forEach(values => {
+  rows.forEach((values, rowIndex) => {
     const row = {
       timestamp: values[0],
       date: values[1],
@@ -441,8 +443,14 @@ function rebuildAllResults() {
       gym: values[6],
     };
 
+    let applicationId = String(values[7] || '').trim();
+    if (!applicationId) {
+      applicationId = generateApplicationId_();
+      responseSheet.getRange(rowIndex + 2, 8).setValue(applicationId);
+    }
+
     const result = buildSettlementResult_(ss, row);
-    appendSettlementResult_(ss, result);
+    appendSettlementResult_(ss, result, applicationId);
   });
 
   updateMonthlySummary();
