@@ -47,6 +47,15 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
+  if (page === 'accounting') {
+    return HtmlService
+      .createHtmlOutputFromFile('Accounting')
+      .setTitle('交通費精算 会計画面')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+      .setFaviconUrl(ICON_URL)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
   return HtmlService
     .createHtmlOutputFromFile('Index')
     .setTitle('交通費申請フォーム')
@@ -1202,4 +1211,158 @@ function formatDateForDisplay_(value) {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * 会計画面用：承認済申請のある月一覧を取得
+ */
+function getAccountingMonthsForWeb() {
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(SHEET_NAMES.responses);
+  if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+
+  const values = sheet.getDataRange().getValues();
+  const months = values.slice(1)
+    .filter(row => String(row[8] || '').trim() === STATUS_APPROVED)
+    .map(row => formatMonth_(row[1]))
+    .filter(m => m);
+
+  return [...new Set(months)].sort().reverse();
+}
+
+/**
+ * 会計画面用：承認済申請を月＋支払状況で人別に集計
+ *
+ * paymentFilter: 'unpaid' | 'paid' | 'all'
+ */
+function getAccountingSummaryForWeb(month, paymentFilter) {
+  const ss = getSpreadsheet_();
+  const responseSheet = ss.getSheetByName(SHEET_NAMES.responses);
+  const resultSheet = ss.getSheetByName(SHEET_NAMES.results);
+
+  if (!responseSheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+  if (!resultSheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
+
+  const resultMap = new Map();
+  resultSheet.getDataRange().getValues().slice(1).forEach(row => {
+    const id = String(row[15] || '').trim();
+    if (id) {
+      resultMap.set(id, {
+        studentId: row[4],
+        targetKm: row[8],
+        payment: row[12],
+        calcStatus: row[13],
+      });
+    }
+  });
+
+  const targetMonth = normalizeMonth_(month);
+  const groups = new Map();
+
+  responseSheet.getDataRange().getValues().slice(1).forEach(row => {
+    if (String(row[8] || '').trim() !== STATUS_APPROVED) return;
+    if (formatMonth_(row[1]) !== targetMonth) return;
+
+    const paymentStatus = String(row[11] || '').trim();
+    if (!matchesPaymentFilter_(paymentStatus, paymentFilter)) return;
+
+    const applicationId = String(row[7] || '').trim();
+    if (!applicationId) return;
+
+    const result = resultMap.get(applicationId);
+    if (!result) return;
+
+    const name = normalizeName_(row[2]);
+    if (!name) return;
+
+    if (!groups.has(name)) {
+      groups.set(name, {
+        name,
+        studentId: result.studentId,
+        count: 0,
+        totalKm: 0,
+        totalPayment: 0,
+        unpaidCount: 0,
+        paidCount: 0,
+      });
+    }
+
+    const g = groups.get(name);
+    g.count += 1;
+    g.totalKm += Number(result.targetKm) || 0;
+    g.totalPayment += Number(result.payment) || 0;
+    if (paymentStatus === STATUS_PAID) g.paidCount += 1;
+    else if (paymentStatus === INITIAL_PAYMENT_STATUS) g.unpaidCount += 1;
+  });
+
+  return Array.from(groups.values())
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .map(g => Object.assign({}, g, {
+      totalKm: roundToOneDecimal_(g.totalKm),
+    }));
+}
+
+/**
+ * 会計画面用：選択した部員の申請内訳を取得（月＋氏名＋支払状況フィルタ）
+ */
+function getAccountingDetailForWeb(month, name, paymentFilter) {
+  const ss = getSpreadsheet_();
+  const responseSheet = ss.getSheetByName(SHEET_NAMES.responses);
+  const resultSheet = ss.getSheetByName(SHEET_NAMES.results);
+
+  if (!responseSheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+  if (!resultSheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
+
+  const resultMap = new Map();
+  resultSheet.getDataRange().getValues().slice(1).forEach(row => {
+    const id = String(row[15] || '').trim();
+    if (id) {
+      resultMap.set(id, {
+        place: row[6],
+        distanceType: row[7],
+        targetKm: row[8],
+        payment: row[12],
+        calcStatus: row[13],
+      });
+    }
+  });
+
+  const targetMonth = normalizeMonth_(month);
+  const targetName = normalizeName_(name);
+  const list = [];
+
+  responseSheet.getDataRange().getValues().slice(1).forEach(row => {
+    if (String(row[8] || '').trim() !== STATUS_APPROVED) return;
+    if (formatMonth_(row[1]) !== targetMonth) return;
+    if (normalizeName_(row[2]) !== targetName) return;
+
+    const paymentStatus = String(row[11] || '').trim();
+    if (!matchesPaymentFilter_(paymentStatus, paymentFilter)) return;
+
+    const applicationId = String(row[7] || '').trim();
+    const result = resultMap.get(applicationId);
+
+    list.push({
+      applicationId,
+      applicationDate: formatDateForDisplay_(row[1]),
+      applicationType: row[3],
+      place: result ? result.place : '',
+      distanceType: result ? result.distanceType : '',
+      targetKm: result ? result.targetKm : '',
+      payment: result ? result.payment : '',
+      paymentStatus,
+      approvedAt: formatDateForDisplay_(row[10]),
+    });
+  });
+
+  return list;
+}
+
+/**
+ * 支払状況フィルタの判定（'unpaid' / 'paid' / 'all'）
+ */
+function matchesPaymentFilter_(paymentStatus, filter) {
+  if (filter === 'paid') return paymentStatus === STATUS_PAID;
+  if (filter === 'unpaid') return paymentStatus === INITIAL_PAYMENT_STATUS;
+  return true;
 }

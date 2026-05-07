@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/nbashotatata915-tech/transport-expense-icons2/main/7E090507-5563-4FC4-BAF7-468B70D55772.png">
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+        background: #f3f7fb;
+        color: #0b1f4d;
+      }
+
+      .container {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+        line-height: 1.35;
+        color: #061a46;
+      }
+
+      .subtitle {
+        margin-bottom: 24px;
+        color: #007f83;
+        font-weight: 700;
+      }
+
+      .control-row {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .control {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 6px;
+        font-weight: 700;
+      }
+
+      select, input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        font-size: 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      .radio-row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding: 12px 0 0;
+      }
+
+      .radio-row label.inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 0;
+      }
+
+      button {
+        padding: 12px 18px;
+        font-size: 16px;
+        font-weight: 700;
+        color: white;
+        background: #007f83;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      button:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+      }
+
+      .summary-box {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 18px 0;
+      }
+
+      .summary-item {
+        padding: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+      }
+
+      .summary-label {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 700;
+      }
+
+      .summary-value {
+        margin-top: 6px;
+        font-size: 22px;
+        font-weight: 800;
+        color: #061a46;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        overflow: hidden;
+        border-radius: 12px;
+      }
+
+      th {
+        background: #061a46;
+        color: #ffffff;
+        padding: 12px;
+        text-align: left;
+        font-size: 14px;
+      }
+
+      td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 12px;
+        font-size: 14px;
+      }
+
+      tr:nth-child(even) td {
+        background: #f8fafc;
+      }
+
+      .right {
+        text-align: right;
+      }
+
+      .message {
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        display: none;
+      }
+
+      .info {
+        display: block;
+        background: #e6fffb;
+        color: #0f766e;
+      }
+
+      .error {
+        display: block;
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .empty {
+        margin-top: 20px;
+        padding: 18px;
+        background: #fff7ed;
+        color: #9a3412;
+        border-radius: 12px;
+        font-weight: 700;
+        display: none;
+      }
+
+      .section-title {
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 2px solid #e2e8f0;
+        font-size: 20px;
+        font-weight: 800;
+        color: #061a46;
+      }
+
+      .section-subtitle {
+        margin-top: 6px;
+        margin-bottom: 16px;
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .badge-paid {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .badge-unpaid {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge-mixed {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+
+      .detail-button {
+        padding: 6px 10px;
+        font-size: 13px;
+        border-radius: 8px;
+        background: #475569;
+      }
+
+      .detail-header {
+        margin-top: 14px;
+        padding: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        font-weight: 700;
+        display: none;
+        line-height: 1.7;
+      }
+
+      .footer-link {
+        margin-top: 22px;
+        font-size: 14px;
+      }
+
+      .footer-link a {
+        color: #007f83;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      @media (max-width: 720px) {
+        .control-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .summary-box {
+          grid-template-columns: 1fr;
+        }
+
+        table {
+          font-size: 13px;
+        }
+
+        th, td {
+          padding: 10px 8px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>交通費精算 会計画面</h1>
+        <div class="subtitle">承認済の申請の支払状況を確認できます</div>
+
+        <div class="control-row">
+          <div class="control">
+            <label for="monthSelect">対象月</label>
+            <select id="monthSelect">
+              <option value="">選択してください</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label>支払状況</label>
+            <div class="radio-row">
+              <label class="inline"><input type="radio" name="paymentFilter" value="unpaid" checked> 未払い</label>
+              <label class="inline"><input type="radio" name="paymentFilter" value="paid"> 支払済</label>
+              <label class="inline"><input type="radio" name="paymentFilter" value="all"> すべて</label>
+            </div>
+          </div>
+
+          <button id="loadButton" type="button">表示</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="summaryBox" class="summary-box" style="display: none;">
+          <div class="summary-item">
+            <div class="summary-label">対象月</div>
+            <div class="summary-value" id="summaryMonth">-</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-label">対象人数</div>
+            <div class="summary-value" id="summaryPeople">0人</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-label">合計支給額</div>
+            <div class="summary-value" id="summaryTotalPayment">0円</div>
+          </div>
+        </div>
+
+        <div id="emptyMessage" class="empty">
+          条件に該当する申請はありません。
+        </div>
+
+        <table id="summaryTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>氏名</th>
+              <th>学籍番号</th>
+              <th class="right">件数</th>
+              <th class="right">合計距離km</th>
+              <th class="right">合計支給額</th>
+              <th>状態</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+
+        <div class="section-title">申請内訳</div>
+        <div class="section-subtitle">
+          上の一覧で「内訳を見る」を押すと、その部員の申請内訳がここに表示されます。
+        </div>
+
+        <div id="detailMessage" class="message"></div>
+        <div id="detailHeader" class="detail-header"></div>
+
+        <table id="detailTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>申請日</th>
+              <th>申請ID</th>
+              <th>申請種別</th>
+              <th>場所</th>
+              <th>距離区分</th>
+              <th class="right">対象距離km</th>
+              <th class="right">支給額</th>
+              <th>支払状況</th>
+              <th>承認日時</th>
+            </tr>
+          </thead>
+          <tbody id="detailTableBody"></tbody>
+        </table>
+
+        <div id="detailEmptyMessage" class="empty">
+          内訳を表示するには、上の一覧から部員を選択してください。
+        </div>
+
+        <div class="footer-link">
+          <a href="#" id="backToFormLink">申請フォームに戻る</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const monthSelect = document.getElementById('monthSelect');
+      const loadButton = document.getElementById('loadButton');
+      const message = document.getElementById('message');
+      const summaryBox = document.getElementById('summaryBox');
+      const summaryMonth = document.getElementById('summaryMonth');
+      const summaryPeople = document.getElementById('summaryPeople');
+      const summaryTotalPayment = document.getElementById('summaryTotalPayment');
+      const summaryTable = document.getElementById('summaryTable');
+      const summaryTableBody = document.getElementById('summaryTableBody');
+      const emptyMessage = document.getElementById('emptyMessage');
+
+      const detailMessage = document.getElementById('detailMessage');
+      const detailHeader = document.getElementById('detailHeader');
+      const detailTable = document.getElementById('detailTable');
+      const detailTableBody = document.getElementById('detailTableBody');
+      const detailEmptyMessage = document.getElementById('detailEmptyMessage');
+
+      const backToFormLink = document.getElementById('backToFormLink');
+
+      function showMessage(text, type) {
+        message.textContent = text;
+        message.className = 'message ' + type;
+      }
+
+      function clearMessage() {
+        message.textContent = '';
+        message.className = 'message';
+      }
+
+      function showDetailMessage(text, type) {
+        detailMessage.textContent = text;
+        detailMessage.className = 'message ' + type;
+      }
+
+      function clearDetailMessage() {
+        detailMessage.textContent = '';
+        detailMessage.className = 'message';
+      }
+
+      function formatYen(value) {
+        return Number(value || 0).toLocaleString() + '円';
+      }
+
+      function formatKm(value) {
+        return Number(value || 0).toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 1
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function getSelectedPaymentFilter() {
+        const checked = document.querySelector('input[name="paymentFilter"]:checked');
+        return checked ? checked.value : 'unpaid';
+      }
+
+      function resetSummaryView() {
+        summaryBox.style.display = 'none';
+        summaryTable.style.display = 'none';
+        emptyMessage.style.display = 'none';
+        summaryTableBody.innerHTML = '';
+      }
+
+      function resetDetailView() {
+        detailHeader.style.display = 'none';
+        detailHeader.textContent = '';
+        detailTable.style.display = 'none';
+        detailEmptyMessage.style.display = 'block';
+        detailTableBody.innerHTML = '';
+      }
+
+      function buildStatusBadge(row) {
+        if (row.unpaidCount > 0 && row.paidCount > 0) {
+          return '<span class="badge badge-mixed">混在 (未' + row.unpaidCount + '/済' + row.paidCount + ')</span>';
+        }
+        if (row.paidCount > 0) {
+          return '<span class="badge badge-paid">支払済 ' + row.paidCount + '件</span>';
+        }
+        return '<span class="badge badge-unpaid">未払い ' + row.unpaidCount + '件</span>';
+      }
+
+      function renderSummary(rows, month) {
+        resetSummaryView();
+        resetDetailView();
+
+        if (!rows || rows.length === 0) {
+          emptyMessage.style.display = 'block';
+          return;
+        }
+
+        let totalPayment = 0;
+
+        rows.forEach(row => {
+          totalPayment += Number(row.totalPayment) || 0;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(row.name)}</td>
+            <td>${escapeHtml(row.studentId || '')}</td>
+            <td class="right">${row.count}件</td>
+            <td class="right">${formatKm(row.totalKm)}</td>
+            <td class="right">${formatYen(row.totalPayment)}</td>
+            <td>${buildStatusBadge(row)}</td>
+            <td><button type="button" class="detail-button" data-name="${escapeHtml(row.name)}">内訳を見る</button></td>
+          `;
+
+          summaryTableBody.appendChild(tr);
+        });
+
+        summaryMonth.textContent = month;
+        summaryPeople.textContent = rows.length + '人';
+        summaryTotalPayment.textContent = formatYen(totalPayment);
+
+        summaryBox.style.display = 'grid';
+        summaryTable.style.display = 'table';
+      }
+
+      function renderDetail(rows, month, name, paymentFilter) {
+        clearDetailMessage();
+        detailTable.style.display = 'none';
+        detailEmptyMessage.style.display = 'none';
+        detailTableBody.innerHTML = '';
+
+        const filterLabel =
+          paymentFilter === 'paid' ? '支払済' :
+          paymentFilter === 'unpaid' ? '未払い' :
+          'すべて';
+
+        if (!rows || rows.length === 0) {
+          detailHeader.textContent = month + ' / ' + name + ' (' + filterLabel + ')：該当する申請がありません';
+          detailHeader.style.display = 'block';
+          detailEmptyMessage.style.display = 'block';
+          return;
+        }
+
+        let totalKm = 0;
+        let totalPayment = 0;
+
+        rows.forEach(row => {
+          totalKm += Number(row.targetKm) || 0;
+          totalPayment += Number(row.payment) || 0;
+
+          const badgeClass = row.paymentStatus === '支払済' ? 'badge-paid' : 'badge-unpaid';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(row.applicationDate || '')}</td>
+            <td>${escapeHtml(row.applicationId || '')}</td>
+            <td>${escapeHtml(row.applicationType || '')}</td>
+            <td>${escapeHtml(row.place || '')}</td>
+            <td>${escapeHtml(row.distanceType || '')}</td>
+            <td class="right">${formatKm(row.targetKm)}</td>
+            <td class="right">${formatYen(row.payment)}</td>
+            <td><span class="badge ${badgeClass}">${escapeHtml(row.paymentStatus || '')}</span></td>
+            <td>${escapeHtml(row.approvedAt || '')}</td>
+          `;
+
+          detailTableBody.appendChild(tr);
+        });
+
+        detailHeader.textContent =
+          month + ' / ' + name + ' (' + filterLabel + ')：' +
+          rows.length + '件、合計距離 ' + formatKm(totalKm) + 'km、合計支給額 ' + formatYen(totalPayment);
+
+        detailHeader.style.display = 'block';
+        detailTable.style.display = 'table';
+      }
+
+      function populateMonths(months) {
+        monthSelect.innerHTML = '<option value="">選択してください</option>';
+
+        months.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month;
+          option.textContent = month;
+          monthSelect.appendChild(option);
+        });
+
+        if (months.length > 0) {
+          monthSelect.value = months[0];
+        }
+      }
+
+      google.script.run
+        .withSuccessHandler(months => {
+          populateMonths(months);
+        })
+        .withFailureHandler(error => {
+          showMessage('月の候補の読み込みに失敗しました：' + error.message, 'error');
+        })
+        .getAccountingMonthsForWeb();
+
+      loadButton.addEventListener('click', () => {
+        clearMessage();
+        resetSummaryView();
+        resetDetailView();
+
+        const month = monthSelect.value;
+        const paymentFilter = getSelectedPaymentFilter();
+
+        if (!month) {
+          showMessage('対象月を選択してください。', 'error');
+          return;
+        }
+
+        loadButton.disabled = true;
+        loadButton.textContent = '読み込み中...';
+
+        google.script.run
+          .withSuccessHandler(rows => {
+            loadButton.disabled = false;
+            loadButton.textContent = '表示';
+            renderSummary(rows, month);
+          })
+          .withFailureHandler(error => {
+            loadButton.disabled = false;
+            loadButton.textContent = '表示';
+            showMessage('集計の読み込みに失敗しました：' + error.message, 'error');
+          })
+          .getAccountingSummaryForWeb(month, paymentFilter);
+      });
+
+      summaryTableBody.addEventListener('click', event => {
+        const target = event.target;
+        if (!target.classList.contains('detail-button')) return;
+
+        const name = target.getAttribute('data-name');
+        const month = monthSelect.value;
+        const paymentFilter = getSelectedPaymentFilter();
+
+        if (!month) {
+          showDetailMessage('対象月を選択してください。', 'error');
+          return;
+        }
+
+        clearDetailMessage();
+        detailHeader.style.display = 'none';
+        detailTable.style.display = 'none';
+        detailEmptyMessage.style.display = 'none';
+        detailTableBody.innerHTML = '';
+
+        target.disabled = true;
+        target.textContent = '読み込み中...';
+
+        google.script.run
+          .withSuccessHandler(rows => {
+            target.disabled = false;
+            target.textContent = '内訳を見る';
+            renderDetail(rows, month, name, paymentFilter);
+          })
+          .withFailureHandler(error => {
+            target.disabled = false;
+            target.textContent = '内訳を見る';
+            showDetailMessage('申請内訳の読み込みに失敗しました：' + error.message, 'error');
+          })
+          .getAccountingDetailForWeb(month, name, paymentFilter);
+      });
+
+      backToFormLink.addEventListener('click', event => {
+        event.preventDefault();
+
+        const url = window.location.href.split('?')[0];
+        window.location.href = url;
+      });
+    </script>
+  </body>
+</html>
