@@ -8,6 +8,7 @@ const SHEET_NAMES = {
   results: '精算結果',
   summary: '月別集計',
   errors: 'エラーログ',
+  statusHistory: 'ステータス変更履歴',
 };
 
 const APPLICATION_TYPES = {
@@ -21,6 +22,9 @@ const DISTANCE_TYPES = {
 };
 
 const INITIAL_APPLICATION_STATUS = '審査中';
+const STATUS_APPROVED = '承認済';
+const STATUS_REJECTED = '差し戻し';
+
 const INITIAL_PAYMENT_STATUS = '未払い';
 
 function getSpreadsheet_() {
@@ -843,6 +847,195 @@ function getHistoryNamesForWeb(month) {
     .filter(name => name);
 
   return [...new Set(names)].sort();
+}
+
+/**
+ * 管理画面用：審査中の申請一覧を取得
+ *
+ * フォーム回答シートのステータスが「審査中」の行を抽出し、
+ * 同じ申請IDを持つ精算結果から対象距離・支給額・計算ステータスを付与する
+ */
+function getPendingApplicationsForWeb() {
+  const ss = getSpreadsheet_();
+  const responseSheet = ss.getSheetByName(SHEET_NAMES.responses);
+  const resultSheet = ss.getSheetByName(SHEET_NAMES.results);
+
+  if (!responseSheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+  if (!resultSheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
+
+  const resultMap = new Map();
+  const resultValues = resultSheet.getDataRange().getValues();
+  resultValues.slice(1).forEach(row => {
+    const id = String(row[15] || '').trim();
+    if (id) {
+      resultMap.set(id, {
+        place: row[6],
+        distanceType: row[7],
+        targetKm: row[8],
+        payment: row[12],
+        calcStatus: row[13],
+        errorMessage: row[14],
+      });
+    }
+  });
+
+  const responseValues = responseSheet.getDataRange().getValues();
+  const pending = [];
+
+  responseValues.slice(1).forEach(row => {
+    const status = String(row[8] || '').trim();
+    if (status !== INITIAL_APPLICATION_STATUS) return;
+
+    const applicationId = String(row[7] || '').trim();
+    if (!applicationId) return;
+
+    const result = resultMap.get(applicationId);
+
+    pending.push({
+      applicationId,
+      applicationDate: formatDateForDisplay_(row[1]),
+      name: normalizeName_(row[2]),
+      applicationType: row[3],
+      place: result ? result.place : (row[3] === APPLICATION_TYPES.pickup ? row[4] : row[6]),
+      distanceType: result ? result.distanceType : row[5],
+      targetKm: result ? result.targetKm : '',
+      payment: result ? result.payment : '',
+      calcStatus: result ? result.calcStatus : '',
+      calcError: result ? result.errorMessage : '',
+    });
+  });
+
+  return pending;
+}
+
+/**
+ * 管理画面用：複数の申請を一括で承認
+ *
+ * 戻り値：{ successCount, errors: [{ applicationId, message }] }
+ */
+function approveApplications(applicationIds) {
+  if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+    return { successCount: 0, errors: [] };
+  }
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(SHEET_NAMES.responses);
+  if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+
+  const targetIds = new Set(
+    applicationIds.map(id => String(id || '').trim()).filter(id => id)
+  );
+  const values = sheet.getDataRange().getValues();
+  const now = new Date();
+
+  let successCount = 0;
+  const errors = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const id = String(row[7] || '').trim();
+    if (!targetIds.has(id)) continue;
+
+    const currentStatus = String(row[8] || '').trim();
+    if (currentStatus !== INITIAL_APPLICATION_STATUS) {
+      errors.push({
+        applicationId: id,
+        message: `ステータスが「${currentStatus || '空'}」のため承認できません`,
+      });
+      continue;
+    }
+
+    const rowIndex = i + 1;
+    sheet.getRange(rowIndex, 9).setValue(STATUS_APPROVED);
+    sheet.getRange(rowIndex, 11).setValue(now);
+
+    appendStatusHistory_(ss, id, currentStatus, STATUS_APPROVED, '');
+    successCount++;
+  }
+
+  return { successCount, errors };
+}
+
+/**
+ * 管理画面用：申請を1件差し戻し（理由必須）
+ */
+function rejectApplication(applicationId, reason) {
+  const id = String(applicationId || '').trim();
+  const reasonText = String(reason || '').trim();
+
+  if (!id) throw new Error('申請IDが必要です');
+  if (!reasonText) throw new Error('差し戻し理由を入力してください');
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(SHEET_NAMES.responses);
+  if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const rowId = String(row[7] || '').trim();
+    if (rowId !== id) continue;
+
+    const currentStatus = String(row[8] || '').trim();
+    if (currentStatus !== INITIAL_APPLICATION_STATUS) {
+      throw new Error(`ステータスが「${currentStatus || '空'}」のため差し戻しできません`);
+    }
+
+    const rowIndex = i + 1;
+    sheet.getRange(rowIndex, 9).setValue(STATUS_REJECTED);
+    sheet.getRange(rowIndex, 10).setValue(reasonText);
+
+    appendStatusHistory_(ss, id, currentStatus, STATUS_REJECTED, reasonText);
+    return { applicationId: id };
+  }
+
+  throw new Error(`申請ID「${id}」が見つかりません`);
+}
+
+/**
+ * ステータス変更履歴シートを取得（無ければ作成）
+ */
+function getOrCreateStatusHistorySheet_(ss) {
+  let sheet = ss.getSheetByName(SHEET_NAMES.statusHistory);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAMES.statusHistory);
+    sheet.appendRow([
+      '変更日時',
+      '申請ID',
+      '変更前ステータス',
+      '変更後ステータス',
+      '操作者',
+      '備考',
+    ]);
+  }
+  return sheet;
+}
+
+/**
+ * ステータス変更履歴に1件追記
+ */
+function appendStatusHistory_(ss, applicationId, fromStatus, toStatus, note) {
+  const sheet = getOrCreateStatusHistorySheet_(ss);
+  sheet.appendRow([
+    new Date(),
+    applicationId,
+    fromStatus,
+    toStatus,
+    getCurrentUserEmail_(),
+    note || '',
+  ]);
+}
+
+/**
+ * 操作中のユーザーメールを取得（取得不可なら空）
+ */
+function getCurrentUserEmail_() {
+  try {
+    return Session.getActiveUser().getEmail() || '';
+  } catch (e) {
+    return '';
+  }
 }
 
 /**

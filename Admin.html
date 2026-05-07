@@ -239,6 +239,32 @@
         text-decoration: none;
       }
 
+      .button-secondary {
+        background: #64748b;
+      }
+
+      .button-danger {
+        background: #be123c;
+      }
+
+      .button-small {
+        padding: 6px 10px;
+        font-size: 13px;
+        border-radius: 8px;
+      }
+
+      .pending-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      .pending-actions button {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
       @media (max-width: 720px) {
         .control-row {
           flex-direction: column;
@@ -272,6 +298,42 @@
         <div class="subtitle">月別の支給額一覧と部員別申請履歴を確認できます</div>
 
         <div class="section-title" style="margin-top: 0; padding-top: 0; border-top: none;">
+          審査中の申請
+        </div>
+        <div class="section-subtitle">
+          承認したい申請にチェックを入れて「選択した申請を承認」を押してください。差し戻しは行ごとに理由を入力します。
+        </div>
+
+        <div class="pending-actions">
+          <button id="bulkApproveButton" type="button">選択した申請を承認</button>
+          <button id="reloadPendingButton" type="button" class="button-secondary">最新に更新</button>
+        </div>
+
+        <div id="pendingMessage" class="message"></div>
+
+        <table id="pendingTable" style="display: none;">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllPending" title="全て選択"></th>
+              <th>申請ID</th>
+              <th>申請日</th>
+              <th>氏名</th>
+              <th>申請種別</th>
+              <th>場所</th>
+              <th class="right">対象距離km</th>
+              <th class="right">支給額</th>
+              <th>計算</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody"></tbody>
+        </table>
+
+        <div id="pendingEmptyMessage" class="empty">
+          審査中の申請はありません。
+        </div>
+
+        <div class="section-title">
           月別集計
         </div>
         <div class="section-subtitle">
@@ -397,6 +459,14 @@
       const historyTable = document.getElementById('historyTable');
       const historyTableBody = document.getElementById('historyTableBody');
       const historyEmptyMessage = document.getElementById('historyEmptyMessage');
+
+      const bulkApproveButton = document.getElementById('bulkApproveButton');
+      const reloadPendingButton = document.getElementById('reloadPendingButton');
+      const pendingMessage = document.getElementById('pendingMessage');
+      const pendingTable = document.getElementById('pendingTable');
+      const pendingTableBody = document.getElementById('pendingTableBody');
+      const pendingEmptyMessage = document.getElementById('pendingEmptyMessage');
+      const selectAllPending = document.getElementById('selectAllPending');
 
       function showMessage(text, type) {
         message.textContent = text;
@@ -663,6 +733,154 @@
         const url = window.location.href.split('?')[0];
         window.location.href = url;
       });
+
+      function showPendingMessage(text, type) {
+        pendingMessage.textContent = text;
+        pendingMessage.className = 'message ' + type;
+      }
+
+      function clearPendingMessage() {
+        pendingMessage.textContent = '';
+        pendingMessage.className = 'message';
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function renderPending(rows) {
+        pendingTable.style.display = 'none';
+        pendingEmptyMessage.style.display = 'none';
+        pendingTableBody.innerHTML = '';
+        selectAllPending.checked = false;
+
+        if (!rows || rows.length === 0) {
+          pendingEmptyMessage.style.display = 'block';
+          return;
+        }
+
+        rows.forEach(row => {
+          const calcBadge = row.calcStatus === 'OK'
+            ? '<span class="badge badge-ok">OK</span>'
+            : `<span class="badge badge-check" title="${escapeHtml(row.calcError || '')}">要確認</span>`;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input type="checkbox" class="pending-check" value="${escapeHtml(row.applicationId)}"></td>
+            <td>${escapeHtml(row.applicationId)}</td>
+            <td>${escapeHtml(row.applicationDate || '')}</td>
+            <td>${escapeHtml(row.name || '')}</td>
+            <td>${escapeHtml(row.applicationType || '')}</td>
+            <td>${escapeHtml(row.place || '')}</td>
+            <td class="right">${formatKm(row.targetKm)}</td>
+            <td class="right">${formatYen(row.payment)}</td>
+            <td>${calcBadge}</td>
+            <td><button type="button" class="reject-btn button-danger button-small" data-id="${escapeHtml(row.applicationId)}">差し戻し</button></td>
+          `;
+
+          pendingTableBody.appendChild(tr);
+        });
+
+        pendingTable.style.display = 'table';
+      }
+
+      function loadPendingApplications() {
+        clearPendingMessage();
+        pendingTable.style.display = 'none';
+        pendingEmptyMessage.style.display = 'none';
+        pendingTableBody.innerHTML = '';
+
+        google.script.run
+          .withSuccessHandler(rows => {
+            renderPending(rows);
+          })
+          .withFailureHandler(error => {
+            showPendingMessage('審査中の申請の読み込みに失敗しました：' + error.message, 'error');
+          })
+          .getPendingApplicationsForWeb();
+      }
+
+      selectAllPending.addEventListener('change', () => {
+        const checked = selectAllPending.checked;
+        pendingTableBody.querySelectorAll('.pending-check').forEach(cb => {
+          cb.checked = checked;
+        });
+      });
+
+      bulkApproveButton.addEventListener('click', () => {
+        const ids = Array.from(pendingTableBody.querySelectorAll('.pending-check:checked'))
+          .map(cb => cb.value);
+
+        if (ids.length === 0) {
+          showPendingMessage('承認する申請を選択してください。', 'error');
+          return;
+        }
+
+        if (!confirm(ids.length + '件の申請を承認します。よろしいですか？')) return;
+
+        clearPendingMessage();
+        bulkApproveButton.disabled = true;
+        bulkApproveButton.textContent = '承認中...';
+
+        google.script.run
+          .withSuccessHandler(result => {
+            bulkApproveButton.disabled = false;
+            bulkApproveButton.textContent = '選択した申請を承認';
+
+            const errs = (result && result.errors) || [];
+            let msg = (result.successCount || 0) + '件を承認しました。';
+            if (errs.length > 0) {
+              msg += ' (失敗: ' + errs.length + '件)';
+            }
+            showPendingMessage(msg, errs.length > 0 ? 'error' : 'info');
+
+            loadPendingApplications();
+          })
+          .withFailureHandler(error => {
+            bulkApproveButton.disabled = false;
+            bulkApproveButton.textContent = '選択した申請を承認';
+            showPendingMessage('承認に失敗しました：' + error.message, 'error');
+          })
+          .approveApplications(ids);
+      });
+
+      reloadPendingButton.addEventListener('click', loadPendingApplications);
+
+      pendingTableBody.addEventListener('click', event => {
+        const target = event.target;
+        if (!target.classList.contains('reject-btn')) return;
+
+        const id = target.getAttribute('data-id');
+        const reason = window.prompt('差し戻し理由を入力してください：');
+        if (reason === null) return;
+        if (!reason.trim()) {
+          showPendingMessage('差し戻し理由を入力してください。', 'error');
+          return;
+        }
+
+        clearPendingMessage();
+        target.disabled = true;
+        target.textContent = '処理中...';
+
+        google.script.run
+          .withSuccessHandler(result => {
+            showPendingMessage('申請「' + result.applicationId + '」を差し戻しました。', 'info');
+            loadPendingApplications();
+          })
+          .withFailureHandler(error => {
+            target.disabled = false;
+            target.textContent = '差し戻し';
+            showPendingMessage('差し戻しに失敗しました：' + error.message, 'error');
+          })
+          .rejectApplication(id, reason.trim());
+      });
+
+      loadPendingApplications();
     </script>
   </body>
 </html>
