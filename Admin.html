@@ -334,6 +334,41 @@
         </div>
 
         <div class="section-title">
+          承認済・未払い
+        </div>
+        <div class="section-subtitle">
+          承認済で支払い未完了の申請です。支払処理が終わったら「選択した申請を支払済みにする」を押してください。
+        </div>
+
+        <div class="pending-actions">
+          <button id="bulkPayButton" type="button">選択した申請を支払済みにする</button>
+          <button id="reloadUnpaidButton" type="button" class="button-secondary">最新に更新</button>
+        </div>
+
+        <div id="unpaidMessage" class="message"></div>
+
+        <table id="unpaidTable" style="display: none;">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUnpaid" title="全て選択"></th>
+              <th>申請ID</th>
+              <th>申請日</th>
+              <th>氏名</th>
+              <th>申請種別</th>
+              <th>場所</th>
+              <th class="right">対象距離km</th>
+              <th class="right">支給額</th>
+              <th>承認日時</th>
+            </tr>
+          </thead>
+          <tbody id="unpaidTableBody"></tbody>
+        </table>
+
+        <div id="unpaidEmptyMessage" class="empty">
+          承認済・未払いの申請はありません。
+        </div>
+
+        <div class="section-title">
           月別集計
         </div>
         <div class="section-subtitle">
@@ -467,6 +502,14 @@
       const pendingTableBody = document.getElementById('pendingTableBody');
       const pendingEmptyMessage = document.getElementById('pendingEmptyMessage');
       const selectAllPending = document.getElementById('selectAllPending');
+
+      const bulkPayButton = document.getElementById('bulkPayButton');
+      const reloadUnpaidButton = document.getElementById('reloadUnpaidButton');
+      const unpaidMessage = document.getElementById('unpaidMessage');
+      const unpaidTable = document.getElementById('unpaidTable');
+      const unpaidTableBody = document.getElementById('unpaidTableBody');
+      const unpaidEmptyMessage = document.getElementById('unpaidEmptyMessage');
+      const selectAllUnpaid = document.getElementById('selectAllUnpaid');
 
       function showMessage(text, type) {
         message.textContent = text;
@@ -881,6 +924,111 @@
       });
 
       loadPendingApplications();
+
+      function showUnpaidMessage(text, type) {
+        unpaidMessage.textContent = text;
+        unpaidMessage.className = 'message ' + type;
+      }
+
+      function clearUnpaidMessage() {
+        unpaidMessage.textContent = '';
+        unpaidMessage.className = 'message';
+      }
+
+      function renderUnpaid(rows) {
+        unpaidTable.style.display = 'none';
+        unpaidEmptyMessage.style.display = 'none';
+        unpaidTableBody.innerHTML = '';
+        selectAllUnpaid.checked = false;
+
+        if (!rows || rows.length === 0) {
+          unpaidEmptyMessage.style.display = 'block';
+          return;
+        }
+
+        rows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input type="checkbox" class="unpaid-check" value="${escapeHtml(row.applicationId)}"></td>
+            <td>${escapeHtml(row.applicationId)}</td>
+            <td>${escapeHtml(row.applicationDate || '')}</td>
+            <td>${escapeHtml(row.name || '')}</td>
+            <td>${escapeHtml(row.applicationType || '')}</td>
+            <td>${escapeHtml(row.place || '')}</td>
+            <td class="right">${formatKm(row.targetKm)}</td>
+            <td class="right">${formatYen(row.payment)}</td>
+            <td>${escapeHtml(row.approvedAt || '')}</td>
+          `;
+
+          unpaidTableBody.appendChild(tr);
+        });
+
+        unpaidTable.style.display = 'table';
+      }
+
+      function loadUnpaidApplications() {
+        clearUnpaidMessage();
+        unpaidTable.style.display = 'none';
+        unpaidEmptyMessage.style.display = 'none';
+        unpaidTableBody.innerHTML = '';
+
+        google.script.run
+          .withSuccessHandler(rows => {
+            renderUnpaid(rows);
+          })
+          .withFailureHandler(error => {
+            showUnpaidMessage('承認済・未払いの読み込みに失敗しました：' + error.message, 'error');
+          })
+          .getApprovedUnpaidApplicationsForWeb();
+      }
+
+      selectAllUnpaid.addEventListener('change', () => {
+        const checked = selectAllUnpaid.checked;
+        unpaidTableBody.querySelectorAll('.unpaid-check').forEach(cb => {
+          cb.checked = checked;
+        });
+      });
+
+      bulkPayButton.addEventListener('click', () => {
+        const ids = Array.from(unpaidTableBody.querySelectorAll('.unpaid-check:checked'))
+          .map(cb => cb.value);
+
+        if (ids.length === 0) {
+          showUnpaidMessage('支払済みにする申請を選択してください。', 'error');
+          return;
+        }
+
+        if (!confirm(ids.length + '件の申請を支払済みにします。よろしいですか？')) return;
+
+        clearUnpaidMessage();
+        bulkPayButton.disabled = true;
+        bulkPayButton.textContent = '処理中...';
+
+        google.script.run
+          .withSuccessHandler(result => {
+            bulkPayButton.disabled = false;
+            bulkPayButton.textContent = '選択した申請を支払済みにする';
+
+            const errs = (result && result.errors) || [];
+            let msg = (result.successCount || 0) + '件を支払済みにしました。';
+            if (errs.length > 0) {
+              msg += ' (失敗: ' + errs.length + '件)';
+            }
+            showUnpaidMessage(msg, errs.length > 0 ? 'error' : 'info');
+
+            loadUnpaidApplications();
+          })
+          .withFailureHandler(error => {
+            bulkPayButton.disabled = false;
+            bulkPayButton.textContent = '選択した申請を支払済みにする';
+            showUnpaidMessage('支払処理に失敗しました：' + error.message, 'error');
+          })
+          .markAsPaid(ids);
+      });
+
+      reloadUnpaidButton.addEventListener('click', loadUnpaidApplications);
+
+      loadUnpaidApplications();
     </script>
   </body>
 </html>

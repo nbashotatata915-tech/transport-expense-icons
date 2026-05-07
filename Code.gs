@@ -26,6 +26,10 @@ const STATUS_APPROVED = '承認済';
 const STATUS_REJECTED = '差し戻し';
 
 const INITIAL_PAYMENT_STATUS = '未払い';
+const STATUS_PAID = '支払済';
+
+const HISTORY_KIND_STATUS = 'ステータス';
+const HISTORY_KIND_PAYMENT = '支払ステータス';
 
 function getSpreadsheet_() {
   return SpreadsheetApp.getActiveSpreadsheet();
@@ -949,7 +953,7 @@ function approveApplications(applicationIds) {
     sheet.getRange(rowIndex, 9).setValue(STATUS_APPROVED);
     sheet.getRange(rowIndex, 11).setValue(now);
 
-    appendStatusHistory_(ss, id, currentStatus, STATUS_APPROVED, '');
+    appendStatusHistory_(ss, id, HISTORY_KIND_STATUS, currentStatus, STATUS_APPROVED, '');
     successCount++;
   }
 
@@ -986,7 +990,7 @@ function rejectApplication(applicationId, reason) {
     sheet.getRange(rowIndex, 9).setValue(STATUS_REJECTED);
     sheet.getRange(rowIndex, 10).setValue(reasonText);
 
-    appendStatusHistory_(ss, id, currentStatus, STATUS_REJECTED, reasonText);
+    appendStatusHistory_(ss, id, HISTORY_KIND_STATUS, currentStatus, STATUS_REJECTED, reasonText);
     return { applicationId: id };
   }
 
@@ -994,32 +998,169 @@ function rejectApplication(applicationId, reason) {
 }
 
 /**
- * ステータス変更履歴シートを取得（無ければ作成）
+ * 管理画面用：承認済かつ未払いの申請一覧を取得
+ *
+ * フォーム回答シートで ステータス=承認済 かつ 支払ステータス=未払い の行を抽出し、
+ * 申請IDで精算結果と join して返す。
+ */
+function getApprovedUnpaidApplicationsForWeb() {
+  const ss = getSpreadsheet_();
+  const responseSheet = ss.getSheetByName(SHEET_NAMES.responses);
+  const resultSheet = ss.getSheetByName(SHEET_NAMES.results);
+
+  if (!responseSheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+  if (!resultSheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
+
+  const resultMap = new Map();
+  const resultValues = resultSheet.getDataRange().getValues();
+  resultValues.slice(1).forEach(row => {
+    const id = String(row[15] || '').trim();
+    if (id) {
+      resultMap.set(id, {
+        place: row[6],
+        distanceType: row[7],
+        targetKm: row[8],
+        payment: row[12],
+        calcStatus: row[13],
+        errorMessage: row[14],
+      });
+    }
+  });
+
+  const responseValues = responseSheet.getDataRange().getValues();
+  const list = [];
+
+  responseValues.slice(1).forEach(row => {
+    const status = String(row[8] || '').trim();
+    if (status !== STATUS_APPROVED) return;
+
+    const paymentStatus = String(row[11] || '').trim();
+    if (paymentStatus !== INITIAL_PAYMENT_STATUS) return;
+
+    const applicationId = String(row[7] || '').trim();
+    if (!applicationId) return;
+
+    const result = resultMap.get(applicationId);
+
+    list.push({
+      applicationId,
+      applicationDate: formatDateForDisplay_(row[1]),
+      name: normalizeName_(row[2]),
+      applicationType: row[3],
+      place: result ? result.place : (row[3] === APPLICATION_TYPES.pickup ? row[4] : row[6]),
+      targetKm: result ? result.targetKm : '',
+      payment: result ? result.payment : '',
+      calcStatus: result ? result.calcStatus : '',
+      calcError: result ? result.errorMessage : '',
+      approvedAt: formatDateForDisplay_(row[10]),
+    });
+  });
+
+  return list;
+}
+
+/**
+ * 管理画面用：複数の申請を一括で支払済みに設定
+ *
+ * ステータス=承認済 かつ 支払ステータス=未払い のみ遷移可能。
+ * 戻り値：{ successCount, errors: [{ applicationId, message }] }
+ */
+function markAsPaid(applicationIds) {
+  if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+    return { successCount: 0, errors: [] };
+  }
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(SHEET_NAMES.responses);
+  if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+
+  const targetIds = new Set(
+    applicationIds.map(id => String(id || '').trim()).filter(id => id)
+  );
+  const values = sheet.getDataRange().getValues();
+
+  let successCount = 0;
+  const errors = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const id = String(row[7] || '').trim();
+    if (!targetIds.has(id)) continue;
+
+    const currentAppStatus = String(row[8] || '').trim();
+    if (currentAppStatus !== STATUS_APPROVED) {
+      errors.push({
+        applicationId: id,
+        message: `ステータスが「${currentAppStatus || '空'}」のため支払処理できません（承認済が必要）`,
+      });
+      continue;
+    }
+
+    const currentPayStatus = String(row[11] || '').trim();
+    if (currentPayStatus !== INITIAL_PAYMENT_STATUS) {
+      errors.push({
+        applicationId: id,
+        message: `支払ステータスが「${currentPayStatus || '空'}」のため変更できません`,
+      });
+      continue;
+    }
+
+    const rowIndex = i + 1;
+    sheet.getRange(rowIndex, 12).setValue(STATUS_PAID);
+
+    appendStatusHistory_(ss, id, HISTORY_KIND_PAYMENT, currentPayStatus, STATUS_PAID, '');
+    successCount++;
+  }
+
+  return { successCount, errors };
+}
+
+/**
+ * ステータス変更履歴シートを取得（無ければ作成 / 旧スキーマなら自動マイグレーション）
+ *
+ * 列構成：
+ * A 変更日時 | B 申請ID | C 変更種別 | D 変更前ステータス | E 変更後ステータス | F 操作者 | G 備考
+ *
+ * Step 2 で作られた 6 列スキーマ（変更種別なし）を検出した場合は、C列を自動挿入する。
  */
 function getOrCreateStatusHistorySheet_(ss) {
   let sheet = ss.getSheetByName(SHEET_NAMES.statusHistory);
+
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAMES.statusHistory);
     sheet.appendRow([
       '変更日時',
       '申請ID',
+      '変更種別',
       '変更前ステータス',
       '変更後ステータス',
       '操作者',
       '備考',
     ]);
+    return sheet;
   }
+
+  const lastCol = sheet.getLastColumn();
+  if (lastCol === 6) {
+    const headers = sheet.getRange(1, 1, 1, 6).getValues()[0];
+    if (headers[0] === '変更日時' && headers[1] === '申請ID') {
+      sheet.insertColumnBefore(3);
+      sheet.getRange(1, 3).setValue('変更種別');
+    }
+  }
+
   return sheet;
 }
 
 /**
  * ステータス変更履歴に1件追記
  */
-function appendStatusHistory_(ss, applicationId, fromStatus, toStatus, note) {
+function appendStatusHistory_(ss, applicationId, kind, fromStatus, toStatus, note) {
   const sheet = getOrCreateStatusHistorySheet_(ss);
   sheet.appendRow([
     new Date(),
     applicationId,
+    kind,
     fromStatus,
     toStatus,
     getCurrentUserEmail_(),
