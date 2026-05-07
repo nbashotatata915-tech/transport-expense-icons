@@ -83,33 +83,6 @@
         cursor: not-allowed;
       }
 
-      .summary-box {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin: 18px 0;
-      }
-
-      .summary-item {
-        padding: 16px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-      }
-
-      .summary-label {
-        font-size: 13px;
-        color: #64748b;
-        font-weight: 700;
-      }
-
-      .summary-value {
-        margin-top: 6px;
-        font-size: 22px;
-        font-weight: 800;
-        color: #061a46;
-      }
-
       table {
         width: 100%;
         border-collapse: collapse;
@@ -276,10 +249,6 @@
           align-items: stretch;
         }
 
-        .summary-box {
-          grid-template-columns: 1fr;
-        }
-
         table {
           font-size: 13px;
         }
@@ -368,59 +337,6 @@
           承認済・未払いの申請はありません。
         </div>
 
-        <div class="section-title">
-          月別集計
-        </div>
-        <div class="section-subtitle">
-          対象月を選ぶと、その月に誰へ何円支給すべきかを確認できます。
-        </div>
-
-        <div class="control-row">
-          <div class="control">
-            <label for="monthSelect">対象月</label>
-            <select id="monthSelect">
-              <option value="">選択してください</option>
-            </select>
-          </div>
-
-          <button id="loadButton" type="button">集計を表示</button>
-        </div>
-
-        <div id="message" class="message"></div>
-
-        <div id="summaryBox" class="summary-box" style="display: none;">
-          <div class="summary-item">
-            <div class="summary-label">対象月</div>
-            <div class="summary-value" id="summaryMonth">-</div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-label">支給対象人数</div>
-            <div class="summary-value" id="summaryPeople">0人</div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-label">支給額合計</div>
-            <div class="summary-value" id="summaryTotalPayment">0円</div>
-          </div>
-        </div>
-
-        <div id="emptyMessage" class="empty">
-          この月の集計データはありません。
-        </div>
-
-        <table id="summaryTable" style="display: none;">
-          <thead>
-            <tr>
-              <th>氏名</th>
-              <th>学籍番号</th>
-              <th class="right">合計対象距離km</th>
-              <th class="right">支給額合計</th>
-            </tr>
-          </thead>
-          <tbody id="summaryTableBody"></tbody>
-        </table>
-
         <div class="section-title">部員別申請履歴</div>
         <div class="section-subtitle">
           対象月と氏名を選ぶと、その部員の申請内訳を確認できます。
@@ -474,16 +390,6 @@
     </div>
 
     <script>
-      const monthSelect = document.getElementById('monthSelect');
-      const loadButton = document.getElementById('loadButton');
-      const message = document.getElementById('message');
-      const summaryBox = document.getElementById('summaryBox');
-      const summaryMonth = document.getElementById('summaryMonth');
-      const summaryPeople = document.getElementById('summaryPeople');
-      const summaryTotalPayment = document.getElementById('summaryTotalPayment');
-      const summaryTable = document.getElementById('summaryTable');
-      const summaryTableBody = document.getElementById('summaryTableBody');
-      const emptyMessage = document.getElementById('emptyMessage');
       const backToFormLink = document.getElementById('backToFormLink');
 
       const historyMonthSelect = document.getElementById('historyMonthSelect');
@@ -511,16 +417,6 @@
       const unpaidEmptyMessage = document.getElementById('unpaidEmptyMessage');
       const selectAllUnpaid = document.getElementById('selectAllUnpaid');
 
-      function showMessage(text, type) {
-        message.textContent = text;
-        message.className = 'message ' + type;
-      }
-
-      function clearMessage() {
-        message.textContent = '';
-        message.className = 'message';
-      }
-
       function showHistoryMessage(text, type) {
         historyMessage.textContent = text;
         historyMessage.className = 'message ' + type;
@@ -542,33 +438,11 @@
         });
       }
 
-      function resetView() {
-        summaryBox.style.display = 'none';
-        summaryTable.style.display = 'none';
-        emptyMessage.style.display = 'none';
-        summaryTableBody.innerHTML = '';
-      }
-
       function resetHistoryView() {
         historySummary.style.display = 'none';
         historyTable.style.display = 'none';
         historyEmptyMessage.style.display = 'none';
         historyTableBody.innerHTML = '';
-      }
-
-      function populateMonths(months) {
-        monthSelect.innerHTML = '<option value="">選択してください</option>';
-
-        months.forEach(month => {
-          const option = document.createElement('option');
-          option.value = month;
-          option.textContent = month;
-          monthSelect.appendChild(option);
-        });
-
-        if (months.length > 0) {
-          monthSelect.value = months[0];
-        }
       }
 
       function populateHistoryMonths(months) {
@@ -619,41 +493,6 @@
           .getHistoryNamesForWeb(month);
       }
 
-      function renderSummary(rows, month) {
-        resetView();
-
-        if (!rows || rows.length === 0) {
-          emptyMessage.style.display = 'block';
-          return;
-        }
-
-        let totalPayment = 0;
-        let totalKm = 0;
-
-        rows.forEach(row => {
-          totalPayment += Number(row.totalPayment) || 0;
-          totalKm += Number(row.totalKm) || 0;
-
-          const tr = document.createElement('tr');
-
-          tr.innerHTML = `
-            <td>${row.name}</td>
-            <td>${row.studentId || ''}</td>
-            <td class="right">${formatKm(row.totalKm)}</td>
-            <td class="right">${formatYen(row.totalPayment)}</td>
-          `;
-
-          summaryTableBody.appendChild(tr);
-        });
-
-        summaryMonth.textContent = month;
-        summaryPeople.textContent = rows.length + '人';
-        summaryTotalPayment.textContent = formatYen(totalPayment);
-
-        summaryBox.style.display = 'grid';
-        summaryTable.style.display = 'table';
-      }
-
       function renderHistory(rows, month, name) {
         resetHistoryView();
 
@@ -695,41 +534,12 @@
 
       google.script.run
         .withSuccessHandler(months => {
-          populateMonths(months);
           populateHistoryMonths(months);
         })
         .withFailureHandler(error => {
-          showMessage('月の候補の読み込みに失敗しました：' + error.message, 'error');
+          showHistoryMessage('月の候補の読み込みに失敗しました：' + error.message, 'error');
         })
         .getAvailableMonthsForWeb();
-
-      loadButton.addEventListener('click', () => {
-        clearMessage();
-        resetView();
-
-        const month = monthSelect.value;
-
-        if (!month) {
-          showMessage('対象月を選択してください。', 'error');
-          return;
-        }
-
-        loadButton.disabled = true;
-        loadButton.textContent = '読み込み中...';
-
-        google.script.run
-          .withSuccessHandler(rows => {
-            loadButton.disabled = false;
-            loadButton.textContent = '集計を表示';
-            renderSummary(rows, month);
-          })
-          .withFailureHandler(error => {
-            loadButton.disabled = false;
-            loadButton.textContent = '集計を表示';
-            showMessage('集計の読み込みに失敗しました：' + error.message, 'error');
-          })
-          .getMonthlySummaryForWeb(month);
-      });
 
       historyMonthSelect.addEventListener('change', () => {
         const month = historyMonthSelect.value;

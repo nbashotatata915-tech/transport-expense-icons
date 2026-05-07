@@ -6,7 +6,6 @@ const SHEET_NAMES = {
   places: '場所マスタ',
   gas: 'ガソリン単価マスタ',
   results: '精算結果',
-  summary: '月別集計',
   errors: 'エラーログ',
   statusHistory: 'ステータス変更履歴',
 };
@@ -67,7 +66,6 @@ function doGet(e) {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('交通費精算')
-    .addItem('月別集計を更新', 'updateMonthlySummary')
     .addItem('精算結果を全件再作成', 'rebuildAllResults')
     .addToUi();
 }
@@ -338,71 +336,6 @@ function fillFormResponseMeta_(ss, meta, rowIndex) {
 }
 
 /**
- * 月別集計を更新
- */
-function updateMonthlySummary() {
-  const ss = getSpreadsheet_();
-  const resultSheet = ss.getSheetByName(SHEET_NAMES.results);
-  const summarySheet = ss.getSheetByName(SHEET_NAMES.summary);
-
-  if (!resultSheet) throw new Error(`シート「${SHEET_NAMES.results}」がありません`);
-  if (!summarySheet) throw new Error(`シート「${SHEET_NAMES.summary}」がありません`);
-
-  const values = resultSheet.getDataRange().getValues();
-  const rows = values.slice(1);
-
-  const summary = new Map();
-
-  rows.forEach(row => {
-    const month = normalizeMonth_(row[2]);
-    const name = normalizeName_(row[3]);
-    const studentId = row[4];
-    const targetKm = Number(row[8]) || 0;
-    const payment = Number(row[12]) || 0;
-    const status = row[13];
-
-    if (status !== 'OK') return;
-    if (!month || !name) return;
-
-    const key = `${month}__${name}`;
-
-    if (!summary.has(key)) {
-      summary.set(key, {
-        month,
-        name,
-        studentId,
-        totalKm: 0,
-        totalPayment: 0,
-      });
-    }
-
-    const item = summary.get(key);
-    item.totalKm += targetKm;
-    item.totalPayment += payment;
-  });
-
-  summarySheet.clearContents();
-  summarySheet.appendRow(['月', '氏名', '学籍番号', '合計対象距離km', '支給額合計']);
-
-  const output = Array.from(summary.values())
-    .sort((a, b) => {
-      if (a.month !== b.month) return String(a.month).localeCompare(String(b.month));
-      return String(a.name).localeCompare(String(b.name));
-    })
-    .map(item => [
-      item.month,
-      item.name,
-      item.studentId,
-      roundToOneDecimal_(item.totalKm),
-      item.totalPayment,
-    ]);
-
-  if (output.length > 0) {
-    summarySheet.getRange(2, 1, output.length, output[0].length).setValues(output);
-  }
-}
-
-/**
  * 全フォーム回答から精算結果を再作成
  */
 function rebuildAllResults() {
@@ -469,8 +402,6 @@ function rebuildAllResults() {
     const result = buildSettlementResult_(ss, row);
     appendSettlementResult_(ss, result, applicationId);
   });
-
-  updateMonthlySummary();
 }
 
 /**
@@ -741,35 +672,6 @@ function testBoundSpreadsheet() {
   sheet.getRange('H1').setValue('接続テスト');
   sheet.getRange('H2').setValue(ss.getName());
   sheet.getRange('H3').setValue(ss.getSheets().map(s => s.getName()).join(', '));
-}
-
-/**
- * 管理画面用：月別集計を取得
- */
-function getMonthlySummaryForWeb(month) {
-  updateMonthlySummary();
-
-  const ss = getSpreadsheet_();
-  const sheet = ss.getSheetByName(SHEET_NAMES.summary);
-
-  if (!sheet) {
-    throw new Error(`シート「${SHEET_NAMES.summary}」がありません`);
-  }
-
-  const values = sheet.getDataRange().getValues();
-  const rows = values.slice(1);
-
-  const targetMonth = normalizeMonth_(month);
-
-  return rows
-    .filter(row => normalizeMonth_(row[0]) === targetMonth)
-    .map(row => ({
-      month: normalizeMonth_(row[0]),
-      name: normalizeName_(row[1]),
-      studentId: row[2],
-      totalKm: row[3],
-      totalPayment: row[4],
-    }));
 }
 
 /**
