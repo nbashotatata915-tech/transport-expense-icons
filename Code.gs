@@ -20,6 +20,9 @@ const DISTANCE_TYPES = {
   oneWay: '片道扱い',
 };
 
+const INITIAL_APPLICATION_STATUS = '審査中';
+const INITIAL_PAYMENT_STATUS = '未払い';
+
 function getSpreadsheet_() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
@@ -69,6 +72,12 @@ function onFormSubmit(e) {
     gym: values[6],
   };
 
+  const meta = createInitialApplicationMeta_();
+  const formAppendedRow = e && e.range && typeof e.range.getRow === 'function'
+    ? e.range.getRow()
+    : null;
+  fillFormResponseMeta_(ss, meta, formAppendedRow);
+
   const result = buildSettlementResult_(ss, row);
   appendSettlementResult_(ss, result);
 }
@@ -102,12 +111,15 @@ function submitWebApplication(data) {
     gym: data.gym,
   };
 
+  const meta = createInitialApplicationMeta_();
+
   const result = buildSettlementResult_(ss, row);
 
-  appendWebApplicationToResponseSheet_(ss, row);
+  appendWebApplicationToResponseSheet_(ss, row, meta);
   appendSettlementResult_(ss, result);
 
   return {
+    applicationId: meta.applicationId,
     status: result.status,
     payment: result.payment,
     targetKm: result.targetKm,
@@ -244,7 +256,7 @@ function appendErrorLog_(ss, result) {
 /**
  * Webアプリからの申請をフォーム回答シートにも記録
  */
-function appendWebApplicationToResponseSheet_(ss, row) {
+function appendWebApplicationToResponseSheet_(ss, row, meta) {
   const sheet = ss.getSheetByName(SHEET_NAMES.responses);
   if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
 
@@ -256,7 +268,55 @@ function appendWebApplicationToResponseSheet_(ss, row) {
     row.pickupPlace,
     row.distanceType,
     row.gym,
+    meta.applicationId,
+    meta.status,
+    meta.rejectReason,
+    meta.approvedAt,
+    meta.paymentStatus,
   ]);
+}
+
+/**
+ * 新規申請の初期メタ情報（申請ID・ステータス等）を作成
+ */
+function createInitialApplicationMeta_() {
+  return {
+    applicationId: generateApplicationId_(),
+    status: INITIAL_APPLICATION_STATUS,
+    rejectReason: '',
+    approvedAt: '',
+    paymentStatus: INITIAL_PAYMENT_STATUS,
+  };
+}
+
+/**
+ * 申請IDを発行：APP-YYYYMMDD-HHmmss-XXXX
+ */
+function generateApplicationId_() {
+  const tz = Session.getScriptTimeZone();
+  const datePart = Utilities.formatDate(new Date(), tz, 'yyyyMMdd-HHmmss');
+  const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, '0');
+  return `APP-${datePart}-${randomPart}`;
+}
+
+/**
+ * フォーム回答シートのうち、Googleフォームが直前に追記した行へ
+ * 申請ID・ステータス等のメタ情報を書き込む
+ */
+function fillFormResponseMeta_(ss, meta, rowIndex) {
+  const sheet = ss.getSheetByName(SHEET_NAMES.responses);
+  if (!sheet) throw new Error(`シート「${SHEET_NAMES.responses}」がありません`);
+
+  const targetRow = rowIndex || sheet.getLastRow();
+  if (targetRow < 2) return;
+
+  sheet.getRange(targetRow, 8, 1, 5).setValues([[
+    meta.applicationId,
+    meta.status,
+    meta.rejectReason,
+    meta.approvedAt,
+    meta.paymentStatus,
+  ]]);
 }
 
 /**
