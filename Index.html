@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/nbashotatata915-tech/transport-expense-icons2/main/7E090507-5563-4FC4-BAF7-468B70D55772.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/nbashotatata915-tech/transport-expense-icons2/main/7E090507-5563-4FC4-BAF7-468B70D55772.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/nbashotatata915-tech/transport-expense-icons2/main/7E090507-5563-4FC4-BAF7-468B70D55772.png">
+
+    <meta name="theme-color" content="#54c7bd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="交通費申請">
+    <meta name="application-name" content="交通費申請">
+
+    <style>
+      :root {
+        --navy: #16324f;
+        --navy-2: #27445f;
+        --teal: #54c7bd;
+        --teal-dark: #27a8a0;
+        --teal-soft: #e9fbf8;
+        --blue: #5b8def;
+        --blue-soft: #eef5ff;
+        --bg: #f5fbfd;
+        --card: #ffffff;
+        --text: #1f3349;
+        --muted: #7b8a9a;
+        --line: #e8eef5;
+        --danger: #991b1b;
+        --success: #166534;
+        --orange: #ff9f43;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(84, 199, 189, 0.14), transparent 26%),
+          radial-gradient(circle at top right, rgba(91, 141, 239, 0.10), transparent 24%),
+          linear-gradient(180deg, #f8fcfd 0%, #f3f8fb 100%);
+        color: var(--text);
+        min-height: 100dvh;
+        overflow-x: hidden;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 460px;
+        margin: 0 auto;
+        padding: 8px 10px 20px;
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 12px;
+        padding: 18px 16px 16px;
+        border-radius: 26px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(241,251,252,0.96));
+        box-shadow: 0 12px 30px rgba(31, 51, 73, 0.08);
+        border: 1px solid rgba(232, 238, 245, 0.95);
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        width: 160px;
+        height: 160px;
+        right: -68px;
+        top: -68px;
+        border-radius: 50%;
+        background: rgba(84, 199, 189, 0.18);
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        width: 92px;
+        height: 92px;
+        left: -36px;
+        bottom: -36px;
+        border-radius: 50%;
+        background: rgba(91, 141, 239, 0.10);
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .club-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-bottom: 12px;
+      }
+
+      .logo-mark {
+        width: 50px;
+        height: 50px;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #54c7bd, #5b8def);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 22px rgba(39, 168, 160, 0.22);
+        flex-shrink: 0;
+      }
+
+      .logo-mark svg {
+        width: 30px;
+        height: 30px;
+      }
+
+      .club-name {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--teal-dark);
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+      }
+
+      h1 {
+        margin: 1px 0 0;
+        font-size: 28px;
+        line-height: 1.18;
+        letter-spacing: 0.02em;
+        color: var(--navy);
+      }
+
+      .subtitle {
+        margin-top: 9px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
+        font-weight: 700;
+      }
+
+      .hero-visual {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #f5fffd, #f2f7ff);
+        border: 1px solid rgba(232, 238, 245, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .visual-text {
+        flex: 1;
+      }
+
+      .visual-title {
+        font-size: 13px;
+        font-weight: 900;
+        color: var(--navy);
+      }
+
+      .visual-caption {
+        margin-top: 5px;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .illustration {
+        width: 88px;
+        min-width: 88px;
+      }
+
+      .feature-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .feature-chip {
+        padding: 8px 4px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.92);
+        text-align: center;
+      }
+
+      .feature-icon {
+        width: 30px;
+        height: 30px;
+        margin: 0 auto 5px;
+        border-radius: 50%;
+        background: var(--teal-soft);
+        color: var(--teal-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      .feature-title {
+        font-size: 10px;
+        font-weight: 900;
+        color: var(--navy);
+        line-height: 1.35;
+      }
+
+      .app-card {
+        background: rgba(255,255,255,0.98);
+        border-radius: 28px;
+        padding: 16px 12px 16px;
+        box-shadow: 0 14px 32px rgba(31, 51, 73, 0.10);
+        border: 1px solid rgba(232, 238, 245, 0.95);
+      }
+
+      .app-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 2px 2px 16px;
+      }
+
+      .app-title {
+        font-size: 17px;
+        font-weight: 900;
+        color: var(--navy);
+      }
+
+      .app-badge {
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: var(--teal-soft);
+        color: var(--teal-dark);
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin: 4px 0 20px;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        color: #a4b1c1;
+        font-size: 11px;
+        font-weight: 900;
+        min-width: 38px;
+      }
+
+      .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #edf2f7;
+        color: #7b8a9a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .step.active {
+        color: var(--teal-dark);
+      }
+
+      .step.active .step-number {
+        background: linear-gradient(135deg, #54c7bd, #27a8a0);
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(39, 168, 160, 0.22);
+      }
+
+      .step-line {
+        width: 22px;
+        height: 2px;
+        background: #d5dee9;
+        margin-bottom: 17px;
+      }
+
+      .form-section-title {
+        margin: 2px 4px 12px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 900;
+      }
+
+      .field-card {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 12px 12px;
+        margin-bottom: 10px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 6px 16px rgba(31, 51, 73, 0.04);
+      }
+
+      .field-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: var(--teal-soft);
+        color: var(--teal-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .field-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .field-icon.blue {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .field-icon.orange {
+        background: #fff5e8;
+        color: var(--orange);
+      }
+
+      .field-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 5px;
+        font-size: 11px;
+        font-weight: 900;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
+
+      input, select {
+        width: 100%;
+        padding: 4px 0;
+        font-size: 15px;
+        font-weight: 900;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: var(--navy-2);
+        outline: none;
+      }
+
+      select {
+        appearance: auto;
+      }
+
+      .section {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f9fcff;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+      }
+
+      .section-title {
+        margin: 0 4px 10px;
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--navy);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .note {
+        margin-top: 10px;
+        padding: 11px 12px;
+        background: #f0fffb;
+        border: 1px solid #c9f3ed;
+        border-radius: 16px;
+        font-size: 11px;
+        line-height: 1.65;
+        color: #176b64;
+        font-weight: 800;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 16px;
+        padding: 15px;
+        font-size: 16px;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(135deg, #61cfc5, #3db6ae);
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(39, 168, 160, 0.22);
+      }
+
+      button:disabled {
+        background: #a7b3c2;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      .confirm-box {
+        margin-top: 2px;
+        padding: 16px 13px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        box-shadow: 0 10px 26px rgba(31, 51, 73, 0.08);
+      }
+
+      .confirm-title {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--navy);
+        text-align: center;
+      }
+
+      .confirm-subtitle {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1.55;
+      }
+
+      .confirm-list {
+        background: #f9fcff;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 4px 12px;
+      }
+
+      .confirm-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+
+      .confirm-row:last-child {
+        border-bottom: none;
+      }
+
+      .confirm-label {
+        font-weight: 900;
+        color: var(--muted);
+        min-width: 86px;
+      }
+
+      .confirm-value {
+        text-align: right;
+        color: var(--navy);
+        font-weight: 900;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .button-row button {
+        margin-top: 0;
+      }
+
+      .secondary-button {
+        background: #7b8a9a;
+        box-shadow: none;
+      }
+
+      .form-hidden {
+        display: none;
+      }
+
+      .message {
+        margin-top: 14px;
+        padding: 13px;
+        border-radius: 16px;
+        font-weight: 900;
+        display: none;
+        line-height: 1.6;
+        font-size: 13px;
+      }
+
+      .success {
+        display: block;
+        background: #dcfce7;
+        color: var(--success);
+      }
+
+      .error {
+        display: block;
+        background: #fee2e2;
+        color: var(--danger);
+      }
+
+      .result-box {
+        margin-top: 2px;
+        padding: 26px 14px 18px;
+        text-align: center;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: 0 12px 30px rgba(31, 51, 73, 0.09);
+      }
+
+      .result-check {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #54c7bd, #27a8a0);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 14px 28px rgba(39, 168, 160, 0.26);
+      }
+
+      .result-check svg {
+        width: 42px;
+        height: 42px;
+      }
+
+      .result-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--navy);
+      }
+
+      .result-text {
+        margin: 8px 0 16px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
+        font-weight: 800;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .result-item {
+        padding: 15px 8px;
+        border-radius: 20px;
+        background: #f9fcff;
+        border: 1px solid var(--line);
+      }
+
+      .result-label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 900;
+      }
+
+      .result-value {
+        margin-top: 5px;
+        font-size: 23px;
+        color: var(--navy);
+        font-weight: 900;
+      }
+
+      .result-value.teal {
+        color: var(--teal-dark);
+      }
+
+      .footer-help {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.6;
+        font-weight: 800;
+        text-align: center;
+        border: 1px solid rgba(232, 238, 245, 0.95);
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          max-width: none;
+          padding: 6px 8px 16px;
+        }
+
+        .hero {
+          padding: 16px 14px 14px;
+          border-radius: 24px;
+          margin-bottom: 10px;
+        }
+
+        h1 {
+          font-size: 26px;
+        }
+
+        .subtitle {
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .hero-visual {
+          padding: 10px;
+          border-radius: 18px;
+        }
+
+        .illustration {
+          width: 82px;
+          min-width: 82px;
+        }
+
+        .feature-row {
+          gap: 5px;
+          margin-top: 8px;
+        }
+
+        .feature-title {
+          font-size: 10px;
+        }
+
+        .app-card {
+          padding: 14px 10px 14px;
+          border-radius: 24px;
+        }
+
+        .app-title {
+          font-size: 17px;
+        }
+
+        .app-badge {
+          font-size: 11px;
+          padding: 6px 8px;
+        }
+
+        .stepper {
+          margin-bottom: 18px;
+        }
+
+        .step-number {
+          width: 30px;
+          height: 30px;
+          font-size: 13px;
+        }
+
+        .step-line {
+          width: 18px;
+        }
+
+        .field-card {
+          padding: 11px 10px;
+          border-radius: 18px;
+          gap: 9px;
+        }
+
+        .field-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 14px;
+        }
+
+        .field-icon svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        input, select {
+          font-size: 15px;
+        }
+
+        .button-row {
+          flex-direction: column;
+        }
+
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-help {
+          font-size: 10px;
+          padding: 10px 12px;
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="hero">
+        <div class="hero-content">
+          <div class="club-row">
+            <div class="logo-mark" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="26" fill="rgba(255,255,255,0.18)" stroke="white" stroke-width="4"/>
+                <path d="M14 32h36" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                <path d="M32 6c-7 8-10 17-10 26s3 18 10 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                <path d="M32 6c7 8 10 17 10 26s-3 18-10 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="club-name">鹿児島大学医学部バスケットボール部</div>
+              <h1>交通費申請</h1>
+            </div>
+          </div>
+
+          <div class="subtitle">
+            スマホからかんたん申請。<br>
+            交通費をスムーズに申請できます。
+          </div>
+
+          <div class="hero-visual">
+            <div class="visual-text">
+              <div class="visual-title">入力 → 確認 → 完了</div>
+              <div class="visual-caption">
+                必要項目を選ぶだけで、対象距離と支給額を自動計算します。
+              </div>
+            </div>
+
+            <svg class="illustration" viewBox="0 0 180 130" fill="none" aria-hidden="true">
+              <rect x="58" y="12" width="64" height="104" rx="18" fill="white" stroke="#DDE8F1" stroke-width="4"/>
+              <rect x="70" y="30" width="40" height="8" rx="4" fill="#54C7BD"/>
+              <rect x="70" y="48" width="36" height="6" rx="3" fill="#D9EAF4"/>
+              <rect x="70" y="62" width="42" height="6" rx="3" fill="#D9EAF4"/>
+              <rect x="70" y="76" width="32" height="6" rx="3" fill="#D9EAF4"/>
+              <rect x="72" y="94" width="36" height="12" rx="6" fill="#54C7BD"/>
+              <circle cx="38" cy="82" r="22" fill="#FFE7C2"/>
+              <path d="M26 82h24M38 60c-7 7-10 14-10 22s3 15 10 22M38 60c7 7 10 14 10 22s-3 15-10 22" stroke="#FF9F43" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="142" cy="44" r="18" fill="#E9FBF8"/>
+              <path d="M134 44l6 6 12-14" stroke="#27A8A0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M30 30c8-12 20-18 36-18" stroke="#B7EDE8" stroke-width="5" stroke-linecap="round"/>
+              <path d="M128 102c10-4 17-12 22-24" stroke="#C9DAFF" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="feature-row">
+            <div class="feature-chip">
+              <div class="feature-icon">📱</div>
+              <div class="feature-title">スマホで完結</div>
+            </div>
+            <div class="feature-chip">
+              <div class="feature-icon">✓</div>
+              <div class="feature-title">内容確認つき</div>
+            </div>
+            <div class="feature-chip">
+              <div class="feature-icon">¥</div>
+              <div class="feature-title">自動計算</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-card">
+        <div class="app-title-row">
+          <div class="app-title">交通費申請フォーム</div>
+          <div class="app-badge">申請者画面</div>
+        </div>
+
+        <div class="stepper">
+          <div class="step active" id="stepInput">
+            <div class="step-number">1</div>
+            <div class="step-label">入力</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" id="stepConfirm">
+            <div class="step-number">2</div>
+            <div class="step-label">確認</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" id="stepComplete">
+            <div class="step-number">3</div>
+            <div class="step-label">完了</div>
+          </div>
+        </div>
+
+        <form id="applicationForm">
+          <div class="form-section-title">申請内容を入力してください</div>
+
+          <div class="field-card">
+            <div class="field-icon blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="field-body">
+              <label for="date">日付</label>
+              <input type="date" id="date" required>
+            </div>
+          </div>
+
+          <div class="field-card">
+            <div class="field-icon blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M4.5 20c1.5-4 4-6 7.5-6s6 2 7.5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="field-body">
+              <label for="name">氏名</label>
+              <select id="name" required>
+                <option value="">選択してください</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-card">
+            <div class="field-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6 3h9l3 3v15H6V3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M14 3v4h4M8 11h8M8 15h8M8 19h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="field-body">
+              <label for="applicationType">申請種別</label>
+              <select id="applicationType" required>
+                <option value="">選択してください</option>
+                <option value="新入生迎え">新入生迎え</option>
+                <option value="リーグ戦・荷物車出し">リーグ戦・荷物車出し</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="pickupSection" class="section hidden">
+            <div class="section-title">新入生迎えの情報</div>
+
+            <div class="field-card">
+              <div class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="field-body">
+                <label for="pickupPlace">迎え場所</label>
+                <select id="pickupPlace">
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <div class="field-icon orange" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 16l2-6h10l2 6M7 16h10M8 19h.01M16 19h.01M6 16v3M18 16v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 10l1-3h6l1 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="field-body">
+                <label for="distanceType">距離区分</label>
+                <select id="distanceType">
+                  <option value="">選択してください</option>
+                  <option value="往復扱い">往復扱い</option>
+                  <option value="片道扱い">片道扱い</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="note">
+              【往復扱い】桜ヶ丘から迎えに行き、桜ヶ丘へ戻った場合<br>
+              【片道扱い】自宅・外出先から迎え場所に寄り、そのまま桜ヶ丘へ向かった場合
+            </div>
+          </div>
+
+          <div id="luggageSection" class="section hidden">
+            <div class="section-title">荷物車出しの情報</div>
+
+            <div class="field-card">
+              <div class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 11l8-6 8 6v9H4v-9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="field-body">
+                <label for="gym">実施体育館</label>
+                <select id="gym">
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="note">
+              リーグ戦・試合等で部の荷物を乗せて車出しをした場合のみ入力してください。<br>
+              対象距離は、桜ヶ丘〜実施体育館の往復分として計算します。
+            </div>
+          </div>
+
+          <button type="submit" id="submitButton">確認画面へ進む</button>
+        </form>
+
+        <div id="confirmBox" class="confirm-box hidden">
+          <div class="confirm-title">申請内容の確認</div>
+          <div class="confirm-subtitle">
+            内容に誤りがないか確認してください。
+          </div>
+
+          <div class="confirm-list">
+            <div class="confirm-row">
+              <div class="confirm-label">日付</div>
+              <div class="confirm-value" id="confirmDate"></div>
+            </div>
+
+            <div class="confirm-row">
+              <div class="confirm-label">氏名</div>
+              <div class="confirm-value" id="confirmName"></div>
+            </div>
+
+            <div class="confirm-row">
+              <div class="confirm-label">申請種別</div>
+              <div class="confirm-value" id="confirmApplicationType"></div>
+            </div>
+
+            <div class="confirm-row">
+              <div class="confirm-label">場所</div>
+              <div class="confirm-value" id="confirmPlace"></div>
+            </div>
+
+            <div class="confirm-row" id="confirmDistanceTypeRow">
+              <div class="confirm-label">距離区分</div>
+              <div class="confirm-value" id="confirmDistanceType"></div>
+            </div>
+          </div>
+
+          <div class="note">
+            上記の内容で申請します。送信後、対象距離と支給額が自動表示されます。
+          </div>
+
+          <div class="button-row">
+            <button type="button" class="secondary-button" id="backButton">戻る</button>
+            <button type="button" id="confirmSubmitButton">この内容で申請する</button>
+          </div>
+        </div>
+
+        <div id="resultBox" class="result-box hidden">
+          <div class="result-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 12.5l4.2 4.2L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="result-title">申請が完了しました</h2>
+          <div class="result-text">
+            申請内容を受け付けました。<br>
+            管理者側の集計にも反映されます。
+          </div>
+
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">対象距離</div>
+              <div class="result-value teal"><span id="resultTargetKm">0</span>km</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">支給額</div>
+              <div class="result-value teal"><span id="resultPayment">0</span>円</div>
+            </div>
+          </div>
+
+          <button type="button" id="newApplicationButton">続けて申請する</button>
+        </div>
+
+        <div id="message" class="message"></div>
+      </div>
+
+      <div class="footer-help">
+        入力内容に誤りがある場合は、送信前の確認画面で戻って修正できます。
+      </div>
+    </div>
+
+    <script>
+      const applicationType = document.getElementById('applicationType');
+      const pickupSection = document.getElementById('pickupSection');
+      const luggageSection = document.getElementById('luggageSection');
+      const form = document.getElementById('applicationForm');
+      const submitButton = document.getElementById('submitButton');
+      const message = document.getElementById('message');
+
+      const confirmBox = document.getElementById('confirmBox');
+      const backButton = document.getElementById('backButton');
+      const confirmSubmitButton = document.getElementById('confirmSubmitButton');
+
+      const resultBox = document.getElementById('resultBox');
+      const resultTargetKm = document.getElementById('resultTargetKm');
+      const resultPayment = document.getElementById('resultPayment');
+      const newApplicationButton = document.getElementById('newApplicationButton');
+
+      const stepInput = document.getElementById('stepInput');
+      const stepConfirm = document.getElementById('stepConfirm');
+      const stepComplete = document.getElementById('stepComplete');
+
+      let pendingData = null;
+
+      function setStep(step) {
+        stepInput.classList.toggle('active', step === 1);
+        stepConfirm.classList.toggle('active', step === 2);
+        stepComplete.classList.toggle('active', step === 3);
+      }
+
+      function showMessage(text, type) {
+        message.textContent = text;
+        message.className = 'message ' + type;
+      }
+
+      function clearMessage() {
+        message.textContent = '';
+        message.className = 'message';
+      }
+
+      function updateVisibleSections() {
+        const type = applicationType.value;
+
+        pickupSection.classList.toggle('hidden', type !== '新入生迎え');
+        luggageSection.classList.toggle('hidden', type !== 'リーグ戦・荷物車出し');
+      }
+
+      applicationType.addEventListener('change', updateVisibleSections);
+
+      function buildFormData() {
+        const type = applicationType.value;
+
+        return {
+          date: document.getElementById('date').value,
+          name: document.getElementById('name').value,
+          applicationType: type,
+          pickupPlace: type === '新入生迎え' ? document.getElementById('pickupPlace').value : '',
+          distanceType: type === '新入生迎え' ? document.getElementById('distanceType').value : '',
+          gym: type === 'リーグ戦・荷物車出し' ? document.getElementById('gym').value : ''
+        };
+      }
+
+      function validateFormData(data) {
+        if (!data.date) return '日付を選択してください。';
+        if (!data.name) return '氏名を選択してください。';
+        if (!data.applicationType) return '申請種別を選択してください。';
+
+        if (data.applicationType === '新入生迎え') {
+          if (!data.pickupPlace) return '迎え場所を選択してください。';
+          if (!data.distanceType) return '距離区分を選択してください。';
+        }
+
+        if (data.applicationType === 'リーグ戦・荷物車出し') {
+          if (!data.gym) return '実施体育館を選択してください。';
+        }
+
+        return '';
+      }
+
+      function showConfirmScreen(data) {
+        document.getElementById('confirmDate').textContent = data.date;
+        document.getElementById('confirmName').textContent = data.name;
+        document.getElementById('confirmApplicationType').textContent = data.applicationType;
+
+        const place = data.applicationType === '新入生迎え'
+          ? data.pickupPlace
+          : data.gym;
+
+        document.getElementById('confirmPlace').textContent = place;
+
+        const distanceTypeRow = document.getElementById('confirmDistanceTypeRow');
+
+        if (data.applicationType === '新入生迎え') {
+          distanceTypeRow.classList.remove('hidden');
+          document.getElementById('confirmDistanceType').textContent = data.distanceType;
+        } else {
+          distanceTypeRow.classList.add('hidden');
+          document.getElementById('confirmDistanceType').textContent = '';
+        }
+
+        setStep(2);
+        form.classList.add('form-hidden');
+        resultBox.classList.add('hidden');
+        confirmBox.classList.remove('hidden');
+      }
+
+      function populateSelect(id, items) {
+        const select = document.getElementById(id);
+
+        items.forEach(item => {
+          const option = document.createElement('option');
+          option.value = item;
+          option.textContent = item;
+          select.appendChild(option);
+        });
+      }
+
+      google.script.run
+        .withSuccessHandler(data => {
+          populateSelect('name', data.drivers);
+          populateSelect('pickupPlace', data.pickupPlaces);
+          populateSelect('gym', data.gyms);
+        })
+        .withFailureHandler(error => {
+          showMessage('初期データの読み込みに失敗しました：' + error.message, 'error');
+        })
+        .getWebAppInitialData();
+
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        clearMessage();
+
+        const data = buildFormData();
+        const validationError = validateFormData(data);
+
+        if (validationError) {
+          showMessage(validationError, 'error');
+          return;
+        }
+
+        pendingData = data;
+        showConfirmScreen(data);
+      });
+
+      backButton.addEventListener('click', () => {
+        setStep(1);
+        confirmBox.classList.add('hidden');
+        form.classList.remove('form-hidden');
+        clearMessage();
+      });
+
+      confirmSubmitButton.addEventListener('click', () => {
+        if (!pendingData) {
+          showMessage('申請内容が見つかりません。もう一度入力してください。', 'error');
+          return;
+        }
+
+        clearMessage();
+
+        confirmSubmitButton.disabled = true;
+        backButton.disabled = true;
+        confirmSubmitButton.textContent = '送信中...';
+
+        google.script.run
+          .withSuccessHandler(result => {
+            confirmSubmitButton.disabled = false;
+            backButton.disabled = false;
+            confirmSubmitButton.textContent = 'この内容で申請する';
+
+            if (result.status === 'OK') {
+              setStep(3);
+
+              confirmBox.classList.add('hidden');
+              form.classList.add('form-hidden');
+
+              resultTargetKm.textContent = result.targetKm;
+              resultPayment.textContent = result.payment;
+              resultBox.classList.remove('hidden');
+
+              form.reset();
+              updateVisibleSections();
+              pendingData = null;
+            } else {
+              setStep(1);
+              confirmBox.classList.add('hidden');
+              form.classList.remove('form-hidden');
+              showMessage('申請は記録されましたが、確認が必要です：' + result.errorMessage, 'error');
+            }
+          })
+          .withFailureHandler(error => {
+            confirmSubmitButton.disabled = false;
+            backButton.disabled = false;
+            confirmSubmitButton.textContent = 'この内容で申請する';
+            showMessage('送信に失敗しました：' + error.message, 'error');
+          })
+          .submitWebApplication(pendingData);
+      });
+
+      newApplicationButton.addEventListener('click', () => {
+        setStep(1);
+        resultBox.classList.add('hidden');
+        confirmBox.classList.add('hidden');
+        form.classList.remove('form-hidden');
+        clearMessage();
+        pendingData = null;
+      });
+
+      setStep(1);
+    </script>
+  </body>
+</html>
